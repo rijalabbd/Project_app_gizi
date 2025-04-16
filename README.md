@@ -1,4 +1,5 @@
 # apk_gizi
+<<<<<<< HEAD
 
 A new Flutter project.
 
@@ -14,3 +15,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+=======
+.
+>>>>>>> 4e937d0899596ecd04a7f8f045d80fb96e98bfb5
