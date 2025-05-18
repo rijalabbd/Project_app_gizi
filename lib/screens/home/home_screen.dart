@@ -1,3 +1,5 @@
+// lib/screens/home/home_screen.dart
+
 import 'dart:convert';
 import 'dart:math';
 
@@ -8,29 +10,30 @@ import 'package:http/http.dart' as http;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
+import 'package:apk_gizi/main.dart';  // untuk AuthService
 import 'package:apk_gizi/screens/biodata/biodata_screen.dart';
 import 'package:apk_gizi/screens/jadwal/jadwal_screen.dart';
 import 'package:apk_gizi/screens/history/history_screen.dart';
 import 'package:apk_gizi/screens/profile/profile_screen.dart';
 import '../../core/widgets/custom_bottom_nav_bar.dart';
-import 'package:apk_gizi/services/api/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+  const HomeScreen({super.key});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const String baseUrl = 'http://10.0.2.2:8000';
+  static const _baseUrl = 'http://10.0.2.2:8000/api';
+
   int _currentIndex = 0;
   String? _userName;
   String _todayTip = '';
   int _jadwalCount = 0;
   bool _loadingProfile = true;
 
-  final List<String> _tips = [
+  final _tips = [
     "Catat setiap perhitungan BMI-mu",
     "Perhatikan asupan harian karbohidrat",
     "Pastikan protein cukup setiap hari",
@@ -44,70 +47,71 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _checkAuthAndLoad() async {
-    // 1. Periksa token
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('auth_token');
     if (token == null) {
-      if (!mounted) return;
-      context.go('/login');
+      // kosongkan sekaligus trigger redirect ke /login
+      await AuthService.instance.clear();
       return;
     }
-
-    // 2. Load profile & jadwal count bersamaan
-    await Future.wait([_loadProfile(token), _loadJadwalCount(token)]);
+    await Future.wait([
+      _loadProfile(token),
+      _loadJadwalCount(token),
+    ]);
   }
 
   Future<void> _loadProfile(String token) async {
     final res = await http.get(
-      Uri.parse('$baseUrl/user'),
+      Uri.parse('$_baseUrl/user'),
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
     );
     if (res.statusCode == 200) {
-      final data = jsonDecode(res.body);
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      if (!mounted) return;
       setState(() {
-        _userName = data['name'];
+        _userName = data['name'] as String?;
         _loadingProfile = false;
       });
     } else {
-      // token invalid/expired
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('auth_token');
-      if (!mounted) return;
-      context.go('/login');
+      // token invalid, clear & redirect
+      await AuthService.instance.clear();
     }
   }
 
   Future<void> _loadJadwalCount(String token) async {
     final res = await http.get(
-      Uri.parse('$baseUrl/jadwal-makan'),
+      Uri.parse('$_baseUrl/jadwal-makan'),
       headers: {
         'Accept': 'application/json',
         'Authorization': 'Bearer $token',
       },
     );
     if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List;
+      final list = jsonDecode(res.body) as List<dynamic>;
+      if (!mounted) return;
       setState(() => _jadwalCount = list.length);
     }
   }
 
   Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token') ?? '';
-    // panggil API logout
-    await http.post(
-      Uri.parse('$baseUrl/logout'),
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-    await prefs.remove('auth_token');
-    if (!mounted) return;
-    context.go('/login');
+    // clear token & trigger GoRouter redirect
+    await AuthService.instance.clear();
+
+    // panggil logout API (optional)
+    http.post(Uri.parse('$_baseUrl/logout'),
+        headers: {'Accept': 'application/json'}).then((res) {
+      debugPrint('▶️ Logout status: ${res.statusCode}');
+      debugPrint('▶️ Logout body: ${res.body}');
+    }).catchError((e) {
+      debugPrint('▶️ Logout error: $e');
+    });
+
+    // tampilkan SnackBar di layar login
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Logout berhasil')));
   }
 
   @override
@@ -137,9 +141,9 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         leading: const SizedBox(),
         title: _loadingProfile
-            ? const Text('...') 
+            ? const Text('...')
             : Text(
-                'Hallo, $_userName!',
+                'Hallo, ${_userName ?? 'User'}!',
                 style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -157,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: () => _checkAuthAndLoad(),
+          onRefresh: _checkAuthAndLoad,
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -187,8 +191,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: AnimationConfiguration.toStaggeredList(
                       duration: const Duration(milliseconds: 500),
-                      childAnimationBuilder: (widget) =>
-                          SlideAnimation(verticalOffset: 50.0, child: FadeInAnimation(child: widget)),
+                      childAnimationBuilder: (widget) => SlideAnimation(
+                        verticalOffset: 50.0,
+                        child: FadeInAnimation(child: widget),
+                      ),
                       children: [
                         AnimatedMenuItem(
                           title: 'Kalkulator Gizi',
@@ -230,12 +236,12 @@ class AnimatedMenuItem extends StatefulWidget {
   final VoidCallback onTap;
 
   const AnimatedMenuItem({
-    Key? key,
+    super.key,
     required this.title,
     required this.icon,
     required this.bgColor,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedMenuItem> createState() => _AnimatedMenuItemState();
@@ -249,6 +255,7 @@ class _AnimatedMenuItemState extends State<AnimatedMenuItem> {
     setState(() => _scale = 1.0);
     widget.onTap();
   }
+
   void _onTapCancel() => setState(() => _scale = 1.0);
 
   @override
@@ -266,7 +273,10 @@ class _AnimatedMenuItemState extends State<AnimatedMenuItem> {
           decoration: BoxDecoration(
             color: widget.bgColor,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+            boxShadow: const [
+              BoxShadow(
+                  color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -276,7 +286,10 @@ class _AnimatedMenuItemState extends State<AnimatedMenuItem> {
               Text(
                 widget.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600),
               ),
             ],
           ),
