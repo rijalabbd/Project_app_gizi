@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^2.3.0
+  google_fonts: ^6.1.0
   go_router: ^6.0.0
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.7.0
@@ -19,8 +19,18 @@ dependencies:
   intl: ^0.18.1
   percent_indicator: ^4.2.2
   fl_chart: ^0.68.0
-  http: ^0.13.5
+  http: ^1.2.0
   shared_preferences: ^2.2.2
+  url_launcher: ^6.3.0
+  # Tambahan untuk notifikasi push
+  flutter_local_notifications: ^17.2.0
+  # Tambahan untuk pengunggahan foto
+  image_picker: ^1.1.2
+  # Tambahan untuk fitur berbagi
+  share_plus: ^10.0.0
+  # Tambahan untuk database lokal (opsional, jika ingin mengganti SharedPreferences)
+  sqflite: ^2.3.3
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:

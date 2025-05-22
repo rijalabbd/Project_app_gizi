@@ -1,13 +1,9 @@
-// lib/screens/auth/login_screen.dart
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/gestures.dart';
-
-// Import AuthService singleton
-import 'package:apk_gizi/main.dart';
+import 'package:apk_gizi/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -21,7 +17,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   bool isLoading = false;
 
-  // Ganti sesuai base URL backend-mu
   static const String baseUrl = 'http://10.0.2.2:8000';
 
   Future<void> handleLogin() async {
@@ -29,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Email dan password harus diisi')),
       );
@@ -49,21 +45,18 @@ class _LoginScreenState extends State<LoginScreen> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
 
-      // Debug print untuk memastikan struktur respons
-      print('Response login: $data');
+      debugPrint('Response login: $data');
       final token = data['access_token'] as String;
-      print('Access token: $token');
+      debugPrint('Access token: $token');
 
-      // Simpan token ke AuthService agar in-memory token ter-update
       await AuthService.instance.saveToken(token);
-      print('AuthService.token (in-memory): ${AuthService.instance.token}');
+      debugPrint('AuthService.token (in-memory): ${AuthService.instance.token}');
 
-      // Navigasi ke home jika masih mounted
       if (!mounted) return;
-      context.go('/home');
     } else {
       final body = jsonDecode(response.body);
-      final msg = body['message'] ?? 'Terjadi kesalahan (\${response.statusCode})';
+      final msg = body['message'] ?? 'Terjadi kesalahan (${response.statusCode})';
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg)),
       );
