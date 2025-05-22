@@ -31,6 +31,7 @@ dependencies:
   # Tambahan untuk database lokal (opsional, jika ingin mengganti SharedPreferences)
   sqflite: ^2.3.3
   path_provider: ^2.1.4
+  haptic_feedback: ^0.5.1+1
 
 dev_dependencies:
   flutter_test:

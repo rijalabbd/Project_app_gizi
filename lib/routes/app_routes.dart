@@ -10,7 +10,7 @@ import 'package:apk_gizi/screens/kalkulator/kalkulator_screen.dart';
 import 'package:apk_gizi/screens/hasil/hasil_screen.dart';
 import 'package:apk_gizi/screens/jadwal/jadwal_screen.dart';
 import 'package:apk_gizi/screens/history/history_screen.dart';
-import 'package:apk_gizi/screens/profile/profile_screen.dart';
+import 'package:apk_gizi/screens/profile/profile_screen.dart'; // Perbarui impor ini jika nama file berubah
 import 'package:apk_gizi/data/models/user_data.dart';
 
 class AppRoutes {
@@ -86,7 +86,7 @@ class AppRoutes {
           ),
           GoRoute(
             path: 'profile',
-            builder: (context, state) => const ProfileScreen(),
+            builder: (context, state) => const ModernProfileScreen(), // Perbarui ke ModernProfileScreen
           ),
         ],
       ),
